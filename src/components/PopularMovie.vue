@@ -1,13 +1,24 @@
 <template>
-  <my-input v-model="searchQuery" placeholder="Search..."/>
-  <my-select v-model="selectedSort" :options="sortOptions"/>
+  <my-input
+      :model-value="searchQuery"
+      @update:model-value="setSearchQuery"
+      placeholder="Search..."
+            v-focus
+  />
+  <my-select
+      :model-value="selectedSort"
+      @update:model-value="setSelectedSort"
+      :options="sortOptions"
+  />
   <div v-if="!isLoading">
-    <movies-list :movies="sortedAndSearchedMovies" :genres="genres"/>
+    <movies-list
+        :movies="sortedAndSearchedMovies"
+        :genres="genres"/>
     <pagination
         class="paginate"
         :page="page"
         :totalPages="totalPages"
-        @change="changePage"
+        @change:page="setPage"
     />
   </div>
   <div v-else>Loading...</div>
@@ -17,66 +28,40 @@
 import axios from "axios";
 import MoviesList from "@/components/MoviesList";
 import Pagination from "@/components/Pagination";
+import {mapMutations, mapState, mapActions, mapGetters} from 'vuex'
 
 export default {
   name: "PopularMovie",
   components: {MoviesList, Pagination},
-  data(){
-    return{
-      movies: [],
-      genres: [],
-      isLoading: false,
-      selectedSort: '',
-      sortOptions: [
-        {value: 'title', name: 'By title'},
-        {value: 'release_date', name: 'By date'},
-      ],
-      searchQuery: '',
-      page: 1,
-      totalPages: 0,
-      api_key: 'c6ec616f288a182ed86f78577f09a1df'
-    }
-  },
   methods: {
-    async fetchMovies () {
-      try {
-        this.isLoading = true
-        const responce = await axios.get('https://api.themoviedb.org/3/movie/popular', {
-          params: {
-            api_key: this.api_key,
-            page: this.page
-          }
-        })
-        const genres = await axios.get('https://api.themoviedb.org/3/genre/movie/list', {
-          params: {
-            api_key: this.api_key
-          }
-        })
-        this.totalPages = responce.data.total_pages
-        this.movies = responce.data.results
-        this.genres = genres.data.genres
-      } catch (e) {
-        console.log(e)
-      } finally {
-        this.isLoading = false
-      }
-    },
-    changePage(pageNum){
-      this.page = pageNum
-    }
+    ...mapMutations({
+      setPage: 'movie/setPage',
+      setSearchQuery: 'movie/setSearchQuery',
+      setSelectedSort: 'movie/setSelectedSort'
+    }),
+    ...mapActions({
+      fetchMovies: 'movie/fetchMovies'
+    }),
   },
   mounted() {
     this.fetchMovies()
   },
   computed: {
-    sortedMovies() {
-      return [...this.movies].sort((movie1, movie2) => {
-        return movie1[this.selectedSort]?.localeCompare(movie2[this.selectedSort])
-      })
-    },
-    sortedAndSearchedMovies() {
-      return this.sortedMovies.filter(movie => movie.title.toLowerCase().includes(this.searchQuery.toLowerCase()))
-    }
+    ...mapState({
+      movies: state => state.movie.movies,
+      genres: state => state.movie.genres,
+      isLoading: state => state.movie.isLoading,
+      selectedSort: state => state.movie.selectedSort,
+      sortOptions: state => state.movie.sortOptions,
+      searchQuery: state => state.movie.searchQuery,
+      page: state => state.movie.page,
+      totalPages: state => state.movie.totalPages,
+      api_key: state => state.movie.api_key
+    }),
+    ...mapGetters({
+      sortedMovies: 'movie/sortedMovies',
+      sortedAndSearchedMovies: 'movie/sortedAndSearchedMovies'
+    }),
   },
   watch: {
     page() {

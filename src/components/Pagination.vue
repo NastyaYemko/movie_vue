@@ -25,7 +25,7 @@ export default {
   },
   methods: {
     changePage(pageNum){
-      this.$emit('change', pageNum)
+      this.$emit('change:page', pageNum)
     }
   }
 }
